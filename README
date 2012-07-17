@@ -6,12 +6,20 @@ sae-flask-blog 是一款运行在SAE/python上轻型的、基于FLASK框架的bl
 
 核心思想：专注核心业务，由简入繁完善功能
 
+使用到的部分技术：
+python+flask+sae：系统构建的基石
+数据库访问：sqlalchemy，使用了flask-sqlalchemy扩展
+jquery+markitup+highlight：界面展现的相关组件，markitup为在线编辑器，highlight为高亮显示（Sunburst风格）。
+markitup：http://markitup.jaysalvat.com/home/
+highlight：http://softwaremaniacs.org/soft/highlight/en/
+摘要截取：采用正则表达式
+
 已实现的功能：
 日志的添加、修改、删除、浏览
 日志信息的评论添加
+评论管理
 后台管理的登陆
 
 未来想实现的功能：
-评论管理
 类别及标签的翻页
 相册功能
