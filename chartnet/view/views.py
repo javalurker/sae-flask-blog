@@ -5,8 +5,22 @@ from chartnet import app
 from chartnet import setting
 from models import operatorDB
 from common import login_required
+from werkzeug import secure_filename
+import os
 import re
 import time
+from PIL import Image
+from StringIO import StringIO
+if True:
+    import sae.mail
+    from sae.taskqueue import add_task
+    import sae.storage
+    
+######
+def put_obj2storage(file_name = '', data = '', expires='365', type=None, encoding= None, domain_name = setting.STORAGE_DOMAIN_NAME):
+    s = sae.storage.Client()
+    ob = sae.storage.Object(data = data, cache_control='access plus %s day' % expires, content_type= type, content_encoding= encoding)
+    return s.put(domain_name, file_name, ob)
 #from sae.const import (MYSQL_HOST, MYSQL_HOST_S,MYSQL_PORT, MYSQL_USER, MYSQL_PASS, MYSQL_DB)
 
 @app.before_request
@@ -35,7 +49,11 @@ def _index():
 		posts = operatorDB.get_post_page_tags(_start,_end,request.args.get('tags',''))
 	else :
 		posts,_newer,_older = operatorDB.get_post_page(_start,_end)
-	return render_template('index.html',_newstart=_start-setting.EACH_PAGE_POST_NUM,_oldstart=_end,_newer=_newer,_older=_older,posts=posts,coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),BASE_URL=setting.BASE_URL)
+	return render_template('index.html',coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),_newstart=_start-setting.EACH_PAGE_POST_NUM,_oldstart=_end,_newer=_newer,_older=_older,posts=posts,BASE_URL=setting.BASE_URL)
+
+@app.route('/download')
+def download():
+	return render_template('download.html',coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links())
 
 @app.route('/detailpost/<int:post_id>', methods=['GET', 'POST'])
 def detailpost(post_id):
@@ -44,7 +62,8 @@ def detailpost(post_id):
 	_article = operatorDB.detail_post_by_id(post_id)
 	comments = operatorDB.get_post_comments(post_id)
 	comLen = len(comments)
-	return render_template('detailpost.html',coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),post_id=post_id,comLen=comLen,comments=comments,obj=_article,add_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(_article._add_time)))
+	_older,_newer = operatorDB.get_post_older_newer(post_id)
+	return render_template('detailpost.html',_older=_older,_newer=_newer,coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),post_id=post_id,comLen=comLen,comments=comments,obj=_article,add_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(_article._add_time)))
 
 @app.route('/about', methods=['GET', 'POST'])
 def _about():
@@ -52,7 +71,7 @@ def _about():
 		operatorDB.insertAboutReply(request.form.get('author', ''),request.form.get('email', ''),request.form.get('url', ''),request.form.get('comment', ''))
 	aboutReplys = operatorDB.getAboutReplyAll()
 	aboutReplysLen = len(aboutReplys)
-	return render_template('about.html',tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),sub_category=setting.HEAD_SUBCATEGORY['about'],aboutReplys=aboutReplys,aboutReplysLen=aboutReplysLen,BASE_URL=setting.BASE_URL)
+	return render_template('about.html',coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),sub_category=setting.HEAD_SUBCATEGORY['about'],aboutReplys=aboutReplys,aboutReplysLen=aboutReplysLen,BASE_URL=setting.BASE_URL)
 
 @app.route('/soGoodorBad')
 def _soGoodorBad():
@@ -142,13 +161,54 @@ def admin_editpost():
 		_article = operatorDB.detail_post_by_id(post_id)
 	cats = operatorDB.get_all_cat_name()
 	tags = operatorDB.get_all_tag_name()
-	return render_template('admin/editpost_admin.html',obj=_article,cats=cats,tags=tags)
+	return render_template('admin/editpost_admin.html',obj=_article,cats=cats,tags=tags,SITE_TITLE=setting.SITE_TITLE,BASE_URL=setting.BASE_URL)
 
 @app.route('/admin/del_post/<int:post_id>')
 @login_required
 def admin_delpost(post_id):
 	operatorDB.del_post_by_id(post_id)
 	return redirect(url_for('admin_editpost'))
+
+@app.route('/admin/comment',methods=['GET', 'POST'])
+@login_required
+def admin_editcomment():
+	comments = None
+	if request.method == 'GET':
+		print('----------admin_editcomment-----GET--------')
+		if request.args.get('act', '')=='del':
+			commentid = request.args.get('commentid', '')
+			operatorDB.del_comment_by_id(commentid)
+			post_id = request.args.get('post_id', '')
+			comments = operatorDB.get_post_comments(post_id)
+	if request.method == 'POST':
+		post_id = request.form.get('id', '')
+		comments = operatorDB.get_post_comments(post_id)
+	return render_template('admin/editcomment_admin.html',comments=comments,SITE_TITLE=setting.SITE_TITLE,BASE_URL=setting.BASE_URL)
+
+@app.route('/uploadFile',methods=['GET', 'POST'])
+def uploadFile():
+	if request.method == 'POST':
+		file = request.files['Filedata']
+		file_url = ''
+		new_file_name = ''
+		if file:
+			filename = secure_filename(file.filename)
+			try:
+				file_type = filename.split('.')[-1].lower()
+				new_file_name = "%d.%s"% (int(time.time()), file_type)
+			except:
+				file_type = ''
+				new_file_name = str(int(time.time()))
+			if setting.debug:
+				file.save(os.path.join(app.config['UPLOAD_FOLDER'],new_file_name))
+			else:
+				encoding = None
+				if "*.png;*.jpg;*.jpeg;*.gif;".find(file_type) != -1:#图片
+					img = Image.open(StringIO(file.stream.read()))
+					file_url = put_obj2storage(file_name = new_file_name, data = img.tostring('jpeg', 'RGB'), expires='365', type= file.content_type, encoding= encoding)
+				else:
+					file_url = put_obj2storage(file_name = new_file_name, data = file.stream.read(), expires='365', type= file.content_type, encoding= encoding)
+	return file_url
 
 def shorten_content(htmlstr='',sublength=80):
 	result = re.sub(r'<[^>]+>', '', htmlstr)

@@ -163,7 +163,6 @@ class OperatorDB:
 #operator Article 2012/6/7
 	def get_post_page(self,_start=0,_end=20):
 		sumSize = len(Article.query.all())
-		print('%s------%s-----%s' % (_start,_end,len(Article.query.order_by(Article._add_time.desc()).all()[_start:_end])))
 		_newer = _start > 0
 		_older = sumSize>_end
 		return Article.query.order_by(Article._add_time.desc()).all()[_start:_end],_newer,_older
@@ -173,6 +172,11 @@ class OperatorDB:
 
 	def get_post_page_tags(self,_start,_end,tags):
 		return Article.query.order_by(Article._add_time.desc()).filter(Article._tags.contains(tags)).all()[_start:_end]
+	
+	def get_post_older_newer(self,postid):
+		_older = Article.query.order_by(Article._id.desc()).filter(Article._id<postid).first()
+		_newer = Article.query.order_by(Article._id.asc()).filter(Article._id>postid).first()
+		return _older,_newer
 
 	def get_max_id(self):
 		result = db.session.execute("select max(id) as maxid from `sp_posts`")
@@ -235,6 +239,13 @@ class OperatorDB:
 	def get_comments_new(self,count=5):
 		return Comment.query.order_by(Comment.add_time.desc()).all()[:count]
 	
+	def get_comment_by_id(self,id):
+		return Comment.query.fiter_by(id=id).first()
+
+	def del_comment_by_id(self,id):
+		db.session.execute('delete from `sp_comments` where id=%s' % id)
+		db.session.commit()
+	
 	#查询文章详情
 	def detail_post_by_id(self, _id=''):
 		if _id:
@@ -246,6 +257,12 @@ class OperatorDB:
 		if _article:
 			db.session.execute('DELETE FROM `sp_posts` WHERE `id` = %s LIMIT 1' % _id)
 			db.session.execute('DELETE FROM `sp_comments` WHERE `postid` = %s LIMIT %s' % (_id,_article._comment_num))
+			_category = Category.query.filter_by(name=_article._category).first()
+			if _category:
+				if _category.id_num > 1:
+					_category.id_num = _category.id_num-1
+				else:
+					db.session.delete(_category)
 			db.session.commit()
 	
 	def get_post_for_homepage(self):

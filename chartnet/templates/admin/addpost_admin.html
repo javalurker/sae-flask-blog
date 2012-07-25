@@ -6,6 +6,7 @@
 <script type="text/javascript" src="/static/markitup/sets/html/set.js"></script>
 <link rel="stylesheet" type="text/css" href="/static/markitup/skins/simple/style.css" />
 <link rel="stylesheet" type="text/css" href="/static/markitup/sets/html/style.css" />
+<link rel="stylesheet" type="text/css" href="/static/uploadify/uploadify.css" />
 <script type="text/javascript">
 <!--
 $(document).ready(function()    {
@@ -42,11 +43,7 @@ $(document).ready(function()    {
 <p>*标题: <input type="text" name="title" id="tit" style="width:430px;" value="" tabindex="2" /></p>
 <textarea id="html" name="content" style="width:500px;height:300px;" tabindex="3"></textarea>
 
-<?py if use_default_theme: ?>
-图片最宽显示496px | 
-<?py #endif ?>
-
-上传图片或附件 <input id="filetoupload" type="file" size="45" name="filetoupload" class="input">
+上传图片或附件 <input id="filetoupload" type="file" name="filetoupload"/>
 <p>标签: <input type="text" id="tag" name='tags' style="width:360px;" value="" tabindex="4" />用逗号分隔','<br/>
 <a href="#tagdiv" rel="facebox[.thickstyle]">从最近标签中选择</a>
 </p>
@@ -135,31 +132,36 @@ function settag(tag){
 </div>
 
 <!-- ajaxfileupload -->
-<script type="text/javascript" src="/static/jquery-plugin/jquery.upload-1.0.2.min.js"></script>
+<script src="/static/uploadify/swfobject.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/uploadify/jquery.uploadify.v2.1.4.min.js" type="text/javascript" charset="utf-8"></script>
 <script type="text/javascript">
-$('#filetoupload').change(function() {
-    if($(this).val()){
-        $(this).upload('/admin/fileupload', function(res) {
-            if(res.status == 200){
-                var el = document.getElementById('html');
-                
-                var filetype = res.msg.split(".");
-                var tp ="jpg,gif,bmp,png";
-                var rs=tp.indexOf(filetype[filetype.length-1]);
-                if(rs>=0){
-                    el.value += '\n图片：' + res.filename + '\n<img src="' + res.msg + '" alt="' + res.filename + '" /> \n';
-                }else{
-                    el.value += '\n附件：' + res.filename + ' <a href="' + res.msg + '" target="_blank">点击下载</a> \n';
-                }
-                
-                el.focus();
-            }else{
-                $(this).val("");
-                alert(res.msg);
-            }
-        }, 'json');
-    }
-});
+$('#filetoupload').uploadify({
+    'uploader'  : '/static/uploadify/uploadify.swf',
+    'script'    : '/uploadFile',
+    'cancelImg' : '/static/uploadify/cancel.png',
+    'folder'    : '/uploads',
+	'fileExt'   : '*.txt;*.pdf;*.png;*.jpg;*.jpeg;*.gif;*.doc;*.rar',
+	'fileDesc'  : 'Image,Txt,doc,pdf,rar Files',
+	'sizeLimit' : 2048000,//2M
+    'auto'      : true,
+	'queueID'   : 'fileQueue',
+	'multi'     : false, //是否允许同时上传多文件，默认false
+	'simUploadLimit' : 1, //一次同步上传的文件数目  
+	'queueSizeLimit' : 3, //限制在一次队列中的次数（可选定几个文件）。默认值= 999，而一次可传几个文件有 simUploadLimit属性决定。
+	'buttonText'     : 'BROWSE',
+	onComplete: function (event, queueID, fileObj, response, data) {
+		var el = document.getElementById('html');
+        var filetype = fileObj.name.toLowerCase().split(".");
+        var tp ="png,jpg,jpeg,gif";
+        var rs=tp.indexOf(filetype[filetype.length-1]);
+        if(rs>=0){
+             el.value += '<p>图片：' + fileObj.name + '<img src="' + response + '" /> </p>';
+        }else{
+             el.value += '<p>附件：' + fileObj.name + ' <a href="' + response + '" target="_blank">点击下载</a> </p>';
+        }
+        el.focus();
+	}  
+	});
 </script>
 <!-- /ajaxfileupload -->
 {% endblock %}

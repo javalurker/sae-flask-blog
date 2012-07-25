@@ -41,7 +41,7 @@ myHtmlSettings = {
         {name:'Link', key:'L', openWith:'<a href="[![Link:!:http://]!]"(!( title="[![Title]!]")!) target="_blank">', closeWith:'</a> ', placeHolder:'Your text to link...' },
         {separator:'---------------' },
         {name:'Quotes', openWith:'<blockquote>', closeWith:'</blockquote> '},
-        {name:'Code', openWith:'[code]', closeWith:'[/code]'},        
+        {name:'Code', openWith:'<pre><code>', closeWith:'</code></pre>'},        
         {name:'Clean', replaceWith:function(h) { return h.selection.replace(/<(.*?)>/g, "") } },
         {name:'Cut', openWith:'\n <!--more--> \n', closeWith:'' }
     ]

@@ -16,7 +16,7 @@
     <ul id="Category_list">
 		{% for cat in cats %}
         <li class="category">
-            <a title="View all posts filed under 不想分类" href="?cat={{ cat.name }}">{{ cat.name }} <span class="tag_meta">({{ cat.id_num }})</span></a>
+            <a title="View all posts filed under 不想分类" href="/?cat={{ cat.name }}">{{ cat.name }} <span class="tag_meta">({{ cat.id_num }})</span></a>
         </li>
 		{% endfor %}
     </ul>
@@ -26,7 +26,7 @@
     <h1>Tags</h1>
     <p id="top_tags">
 		{% for tag in tags %}
-        <a title="SAE" href="?tags={{ tag.name }}">{{ tag.name }}</a> <span class="tag_meta">({{ tag.id_num }})</span> 
+        <a title="SAE" href="/?tags={{ tag.name }}">{{ tag.name }}</a> <span class="tag_meta">({{ tag.id_num }})</span> 
 		{% endfor %}
     </p>
 </section>
@@ -34,7 +34,6 @@
 <section>
     <h1>Link Broll</h1>
     <ul id="Category_list">
-        <li class="category"><a href="/topic/45/linkbroll" target="_blank">添加友情链接</a></li>
 		{% for _link in links %}
         <li class="category"><a href="{{_link.url}}" target="_blank">{{_link.name}}</a></li>
 		{% endfor %}
