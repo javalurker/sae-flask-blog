@@ -65,6 +65,12 @@ def detailpost(post_id):
 	_older,_newer = operatorDB.get_post_older_newer(post_id)
 	return render_template('detailpost.html',_older=_older,_newer=_newer,coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),post_id=post_id,comLen=comLen,comments=comments,obj=_article,add_time=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(_article._add_time)))
 
+@app.route('/timeline')
+def _timeline():
+	_data = operatorDB.getTimelineData()
+	rs = u'{"timeline":{"headline":"c-house的时间线","type":"default","text":"始于2012年7月","date": [%s]}}' % _data.timeline_data
+	return render_template('timeline.html',rs=rs,coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links())
+
 @app.route('/about', methods=['GET', 'POST'])
 def _about():
 	if request.method == 'POST':
@@ -134,10 +140,15 @@ def admin_addpost():
 			pass
 		if tagslist:
 			_tags = ','.join(tagslist)
-		postId = operatorDB.add_new_article(request.form.get('category', ''),request.form.get('title', ''),request.form.get('content', ''),_tags,request.form.get('password', ''),shorten_content(request.form.get('content', '')))
+		_article = operatorDB.add_new_article(request.form.get('category', ''),request.form.get('title', ''),request.form.get('content', ''),_tags,request.form.get('password', ''),shorten_content(request.form.get('content', '')))
+		postId = _article._id
 		if _tags!='':
 			operatorDB.add_postid_to_tags(_tags.split(','), str(postId))
-		operatorDB.add_postid_to_cat(request.form.get('category', ''),str(postId))	
+		operatorDB.add_postid_to_cat(request.form.get('category', ''),str(postId))
+		if operatorDB.isHasData():
+			updateTimelineData(_article)
+		else:
+			addTimelineData()
 	cats = operatorDB.get_all_cat_name()
 	tags = operatorDB.get_all_tag_name()
 	return render_template('admin/addpost_admin.html',title=u'添加文章',cats=cats,tags=tags,SITE_TITLE=setting.SITE_TITLE,BASE_URL=setting.BASE_URL)
@@ -213,3 +224,23 @@ def uploadFile():
 def shorten_content(htmlstr='',sublength=80):
 	result = re.sub(r'<[^>]+>', '', htmlstr)
 	return result[0:sublength]
+
+def addTimelineData():
+	_list = operatorDB.getArticleAllForTimeline()
+	_data = ''
+	for _article in _list:
+		startDate = time.strftime('%Y,%m,%d',time.localtime(_article._add_time))
+		headline = _article._title
+		text = _article._category
+		media = '%sdetailpost/%s' % (setting.BASE_URL,_article._id)
+		_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"%s","credit":"","caption":""}}' % (_data,startDate,headline,text,media)
+	operatorDB.saveTimelineData(_data[1:])
+
+def updateTimelineData(_article):
+	timelineData = operatorDB.getTimelineData()
+	startDate = time.strftime('%Y,%m,%d',time.localtime(_article._add_time))
+	headline = _article._title
+	text = _article._shorten_content
+	media = '/detailpost/%s' % _article._id
+	_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"%s","credit":"","caption":""}}' % (timelineData.timeline_data,startDate,headline,text,media)
+	operatorDB.saveTimelineData(_data,timelineData.id)

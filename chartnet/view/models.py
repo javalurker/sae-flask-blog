@@ -71,6 +71,17 @@ class Article(db.Model):
 	def __repr__(self):
 		return '<Article %r>' % self._title
 
+class Timeline(db.Model):
+	__tablename__ = 'timeline_data'
+	id = db.Column('id',db.Integer, primary_key=True)
+	timeline_data = db.Column('timeline_data',db.Text, nullable=False)
+
+	def __init__(self,timeline_data=''):
+		self.timeline_data = timeline_data
+	
+	def __repr__(self):
+		return '<Timeline %r>' % self.timeline_data
+
 class Link(db.Model):
 	__tablename__ = 'sp_links'
 	id = db.Column('id',db.Integer, primary_key=True)
@@ -210,7 +221,7 @@ class OperatorDB:
 		_article = Article(category,title,content,0,0,tags,password,shorten_content,timestamp,timestamp)
 		db.session.add(_article)
 		db.session.commit()
-		return _article._id
+		return _article
 
 	def update_article(self, id,category,title,content,tags,password,shorten_content):
 		timestamp = int(time())		
@@ -231,6 +242,27 @@ class OperatorDB:
 		_article._comment_num = _article._comment_num+1
 		db.session.commit()
 		return comment.id
+	
+	def getArticleAllForTimeline(self):
+		return Article.query.all()
+	
+	#timeline
+	def isHasData(self):
+		if 0==len(Timeline.query.all()):
+			return False
+		return True
+	
+	def getTimelineData(self):
+		return Timeline.query.first()
+	
+	def saveTimelineData(self,_data='',_id=''):
+		if _id=='':
+			timeline = Timeline(_data)
+			db.session.add(timeline)
+		else:
+			timelinedata = Timeline.query.filter_by(id=_id).first()
+			timelinedata.timeline_data=_data
+		db.session.commit()
 
 	#回复
 	def get_post_comments(self,postid):
