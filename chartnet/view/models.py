@@ -179,10 +179,16 @@ class OperatorDB:
 		return Article.query.order_by(Article._add_time.desc()).all()[_start:_end],_newer,_older
 
 	def get_post_page_category(self,_start,_end,cat):
-		return Article.query.order_by(Article._add_time.desc()).filter_by(_category=cat).all()[_start:_end]
+		sumSize = len(Article.query.filter_by(_category=cat).all())
+		_newer = _start > 0
+		_older = sumSize>_end
+		return Article.query.order_by(Article._add_time.desc()).filter_by(_category=cat).all()[_start:_end],_newer,_older
 
 	def get_post_page_tags(self,_start,_end,tags):
-		return Article.query.order_by(Article._add_time.desc()).filter(Article._tags.contains(tags)).all()[_start:_end]
+		sumSize = len(Article.query.filter(Article._tags.contains(tags)).all())
+		_newer = _start > 0
+		_older = sumSize>_end
+		return Article.query.order_by(Article._add_time.desc()).filter(Article._tags.contains(tags)).all()[_start:_end],_newer,_older
 	
 	def get_post_older_newer(self,postid):
 		_older = Article.query.order_by(Article._id.desc()).filter(Article._id<postid).first()
@@ -244,7 +250,7 @@ class OperatorDB:
 		return comment.id
 	
 	def getArticleAllForTimeline(self):
-		return Article.query.all()
+		return Article.query.order_by(Article._add_time.asc()).all()
 	
 	#timeline
 	def isHasData(self):

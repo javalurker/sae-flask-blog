@@ -1,3 +1,5 @@
+{% extends "timeline_base.html" %}
+{% block main %}
 <style>
 			#timeline-embed{
 				margin:0px !important;
@@ -22,6 +24,7 @@
 				source: {{rs | safe}},
 				//start_at_end:	true,					//OPTIONAL
 				//hash_bookmark: true,					//OPTIONAL
+				lang:	'zh-ch',
 				css: 	'/static/timeline/compiled/css/timeline.css',	//OPTIONAL
 				js: 	'/static/timeline/compiled/js/timeline-min.js'	//OPTIONAL
 			}
@@ -29,3 +32,4 @@
 		<script type="text/javascript" src="/static/timeline/compiled/js/timeline-embed.js"></script>
 		<!-- END Timeline Embed -->
 </div>
+{% endblock %}

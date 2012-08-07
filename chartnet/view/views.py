@@ -11,7 +11,7 @@ import re
 import time
 from PIL import Image
 from StringIO import StringIO
-if True:
+if False:
     import sae.mail
     from sae.taskqueue import add_task
     import sae.storage
@@ -44,12 +44,12 @@ def _index():
 		_start = int(request.args.get('_start',''))
 	_end = _start+setting.EACH_PAGE_POST_NUM
 	if request.args.get('cat','')!='' :
-		posts = operatorDB.get_post_page_category(_start,_end,request.args.get('cat',''))
+		posts,_newer,_older = operatorDB.get_post_page_category(_start,_end,request.args.get('cat',''))
 	elif request.args.get('tags','')!='' :
-		posts = operatorDB.get_post_page_tags(_start,_end,request.args.get('tags',''))
+		posts,_newer,_older = operatorDB.get_post_page_tags(_start,_end,request.args.get('tags',''))
 	else :
 		posts,_newer,_older = operatorDB.get_post_page(_start,_end)
-	return render_template('index.html',coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),_newstart=_start-setting.EACH_PAGE_POST_NUM,_oldstart=_end,_newer=_newer,_older=_older,posts=posts,BASE_URL=setting.BASE_URL)
+	return render_template('index.html',c=request.args.get('cat',''),t=request.args.get('tags',''),coms=operatorDB.get_comments_new(),tags = operatorDB.get_all_tag_name(),cats=operatorDB.get_all_cat_name(),links=operatorDB.get_all_links(),_newstart=_start-setting.EACH_PAGE_POST_NUM,_oldstart=_end,_newer=_newer,_older=_older,posts=posts,BASE_URL=setting.BASE_URL)
 
 @app.route('/download')
 def download():
@@ -231,16 +231,14 @@ def addTimelineData():
 	for _article in _list:
 		startDate = time.strftime('%Y,%m,%d',time.localtime(_article._add_time))
 		headline = _article._title
-		text = _article._category
-		media = '%sdetailpost/%s' % (setting.BASE_URL,_article._id)
-		_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"%s","credit":"","caption":""}}' % (_data,startDate,headline,text,media)
+		text = '%s --- %sdetailpost/%s' % (_article._category,setting.BASE_URL,_article._id)
+		_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"","credit":"","caption":""}}' % (_data,startDate,headline,text)
 	operatorDB.saveTimelineData(_data[1:])
 
 def updateTimelineData(_article):
 	timelineData = operatorDB.getTimelineData()
 	startDate = time.strftime('%Y,%m,%d',time.localtime(_article._add_time))
 	headline = _article._title
-	text = _article._shorten_content
-	media = '/detailpost/%s' % _article._id
-	_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"%s","credit":"","caption":""}}' % (timelineData.timeline_data,startDate,headline,text,media)
+	text = '%s --- %sdetailpost/%s' % (_article._category,setting.BASE_URL,_article._id)
+	_data = '%s,{"startDate":"%s","headline":"%s","text":"%s","asset":{"media":"","credit":"","caption":""}}' % (timelineData.timeline_data,startDate,headline,text)
 	operatorDB.saveTimelineData(_data,timelineData.id)

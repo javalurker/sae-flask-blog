@@ -15,6 +15,7 @@
    <div class="entry-content">{{topic._shorten_content}}......
 
  </div>
+	   <small style="color:#999">Catgory: {{topic._category}}</small>
        <small style="color:#999">Tags: <a href="{{BASE_URL}}tag/主库/" rel="tag">{{topic._tags}}</a></small>
    <footer>
      <a rel="full-article" href="/detailpost/{{topic._id}}">Read On</a>
@@ -24,13 +25,25 @@
    <nav role="pagination">
        <div>
 {% if _newer %}
-        <a class="prev" href="?_start={{ _newstart }}">&larr; Newer</a>
+{%if c %}
+	<a class="prev" href="?_start={{ _newstart }}&cat={{c}}">&larr; Newer</a>
+{% elif t %}
+	<a class="prev" href="?_start={{ _newstart }}&tags={{t}}">&larr; Newer</a>
+{% else %}
+    <a class="prev" href="?_start={{ _newstart }}">&larr; Newer</a>
+{% endif %}
 {% endif %}
          
          &nbsp;
 {% if _older %}
+{%if c %}
+        <a class="next" href="?_start={{ _oldstart }}&cat={{c}}">Older &rarr;</a>
+{% elif t %}
+        <a class="next" href="?_start={{ _oldstart }}&tags={{t}}">Older &rarr;</a>
+{% else %}
         <a class="next" href="?_start={{ _oldstart }}">Older &rarr;</a>
-{% endif %}        
+{% endif %}     
+{% endif %}   
         
        </div>
    </nav>
